@@ -5,7 +5,7 @@ A live terminal dashboard for presenting [spore.host](https://spore.host) — th
 Built for a 140×40 terminal:
 
 ```
- spore.host · scott-s-test-account · us-west-2                                                                          LIVE   11:01:07
+ spore.host · demo-account · us-west-2                                                                                  LIVE   11:01:07
 ╭─ SPORES · single instances ─────── spent $0.10 · burning $0.98/hr ─╮╭─ ARRAYS & MPI ──────────────────────── 2 arrays · 0 members alive ─╮
 │ NAME     TYPE        MKT  EC2          TTL    IDLE      COST EFF/HR││ NAME  SHAPE           MKT  MEMBERS   KIND  ON DONE   TTL      COST │
 │ demo     m8a.4xlarge od   ● running    54:59  15m      $0.06  $0.72││ arr   8× c8a.xlarge   spot ○○○○○○○○  array terminate —       $0.01 │
