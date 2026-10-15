@@ -178,7 +178,7 @@ func (m Model) titleBar(w int) string {
 }
 
 // NAME TYPE MKT EC2 TTL IDLE COST EFF/HR — 68 cells, the pane's inner width at 140 columns.
-var leftCols = []int{9, 12, 5, 13, 7, 7, 7, 7}
+var leftCols = []int{8, 13, 5, 13, 7, 7, 7, 7}
 
 func (m Model) leftPane(w, rows int, singles []state.Spore) []string {
 	now := m.snap.Taken

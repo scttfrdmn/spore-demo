@@ -27,6 +27,7 @@ type Live struct {
 	region  string
 	started time.Time
 	all     bool
+	names   []string // if set, only instances whose Name or array name has one of these prefixes
 
 	mu     sync.Mutex
 	spores map[string]state.Spore // by instance ID
@@ -45,8 +46,9 @@ type spotPrice struct {
 }
 
 // NewLive starts polling. With all=false only instances launched since the
-// dashboard started (minus startGrace) are shown.
-func NewLive(ctx context.Context, region, profile string, all bool) (*Live, error) {
+// dashboard started (minus startGrace) are shown; names, if non-empty, further
+// limits it to instances whose Name or job-array name starts with one of them.
+func NewLive(ctx context.Context, region, profile string, all bool, names []string) (*Live, error) {
 	opts := []func(*config.LoadOptions) error{}
 	if profile != "" {
 		opts = append(opts, config.WithSharedConfigProfile(profile))
@@ -58,7 +60,7 @@ func NewLive(ctx context.Context, region, profile string, all bool) (*Live, erro
 	if err != nil {
 		return nil, err
 	}
-	l := &Live{client: ec2.NewFromConfig(cfg), region: cfg.Region, started: time.Now(), all: all,
+	l := &Live{client: ec2.NewFromConfig(cfg), region: cfg.Region, started: time.Now(), all: all, names: names,
 		spores: map[string]state.Spore{}, seen: map[string]bool{}, spotCache: map[string]spotPrice{},
 		title: "spore.host · " + cfg.Region}
 	go func() {
@@ -93,14 +95,14 @@ func (l *Live) poll(ctx context.Context) {
 		}
 		for _, r := range page.Reservations {
 			for _, i := range r.Instances {
+				if a := tag(i, "spawn:account-name"); a != "" {
+					account = a // from any instance, so the title is right before our first launch
+				}
 				s := l.toSpore(ctx, i)
-				if !l.all && s.Launch.Before(l.started.Add(-startGrace)) {
+				if !l.all && s.Launch.Before(l.started.Add(-startGrace)) || !l.wanted(s) {
 					continue
 				}
 				found[s.ID] = s
-				if a := tag(i, "spawn:account-name"); a != "" {
-					account = a
-				}
 			}
 		}
 	}
@@ -128,6 +130,18 @@ func (l *Live) poll(ctx context.Context) {
 	if account != "" {
 		l.title = "spore.host · " + account + " · " + l.region
 	}
+}
+
+func (l *Live) wanted(s state.Spore) bool {
+	if len(l.names) == 0 {
+		return true
+	}
+	for _, n := range l.names {
+		if strings.HasPrefix(s.Name, n) || (s.ArrayName != "" && strings.HasPrefix(s.ArrayName, n)) {
+			return true
+		}
+	}
+	return false
 }
 
 func describe(s state.Spore, known bool) string {

@@ -21,10 +21,10 @@ import (
 )
 
 type opts struct {
-	region, profile, session string
-	sim, fresh, all, login   bool
-	speed                    float64
-	dashHeight               int
+	region, profile, session, names string
+	sim, fresh, all, login          bool
+	speed                           float64
+	dashHeight                      int
 }
 
 func (o *opts) register(fs *flag.FlagSet) {
@@ -35,6 +35,7 @@ func (o *opts) register(fs *flag.FlagSet) {
 	fs.StringVar(&o.region, "region", region, "AWS region")
 	fs.StringVar(&o.profile, "profile", os.Getenv("AWS_PROFILE"), "AWS profile (default $AWS_PROFILE)")
 	fs.BoolVar(&o.all, "all", false, "show every spawn-managed instance, not just ones launched since start")
+	fs.StringVar(&o.names, "names", "", "comma-separated name prefixes to show (e.g. demo,arr,sim); default: all")
 	fs.BoolVar(&o.sim, "sim", false, "run the simulated demo (no AWS)")
 	fs.Float64Var(&o.speed, "speed", 1, "simulator speed multiplier")
 	fs.StringVar(&o.session, "session", "spore", "tmux session name")
@@ -83,6 +84,9 @@ func up(o opts) error {
 	if o.all {
 		dashArgs = append(dashArgs, "--all")
 	}
+	if o.names != "" {
+		dashArgs = append(dashArgs, "--names", o.names)
+	}
 	if o.sim {
 		dashArgs = append(dashArgs, "--sim", "--speed", fmt.Sprint(o.speed))
 	}
@@ -111,7 +115,13 @@ func dash(o opts) error {
 	if o.sim {
 		src = source.NewSim(o.speed)
 	} else {
-		l, err := source.NewLive(ctx, o.region, o.profile, o.all)
+		var names []string
+		for _, n := range strings.Split(o.names, ",") {
+			if n = strings.TrimSpace(n); n != "" {
+				names = append(names, n)
+			}
+		}
+		l, err := source.NewLive(ctx, o.region, o.profile, o.all, names)
 		if err != nil {
 			return err
 		}

@@ -53,6 +53,7 @@ AWS_PROFILE=aws bin/spore-demo  # live, in $AWS_REGION (default us-west-2)
 | `--region` | `$AWS_REGION` or `us-west-2` | |
 | `--profile` | `$AWS_PROFILE` | |
 | `--all` | | show every spawn-managed instance, not just new ones |
+| `--names` | | only these name prefixes, e.g. `demo,arr,sim` (keeps other work in the account off screen) |
 | `--login-shell` | | your own shell in the bottom pane instead of the clean `laptop $` prompt |
 | `--fresh` | | replace an existing `spore` tmux session |
 | `--sim`, `--speed` | | simulator |

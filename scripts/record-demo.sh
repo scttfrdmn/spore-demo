@@ -127,6 +127,6 @@ driver() {
 # a failed wait must end the recording too, not leave it running
 ( trap 'tmux kill-session -t "=$SESSION" 2>/dev/null || true' EXIT; driver ) & drv=$!
 asciinema rec --headless --window-size 140x40 --overwrite --title "spore.host demo" \
-  -c "env AWS_PROFILE=$AWS_PROFILE $PWD/bin/spore-demo up --session $SESSION --fresh $*" "$OUT.cast"
+  -c "env AWS_PROFILE=$AWS_PROFILE $PWD/bin/spore-demo up --session $SESSION --fresh --names demo,arr,sim $*" "$OUT.cast"
 wait "$drv" || { echo "driver failed — recording is partial" >&2; exit 1; }
 echo "recorded $OUT.cast"; cat "$markers"
