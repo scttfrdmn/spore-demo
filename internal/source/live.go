@@ -120,7 +120,7 @@ func (l *Live) poll(ctx context.Context) {
 			l.seen[id] = true
 		}
 		if !known || prev.State != s.State {
-			l.events = append(l.events, state.Event{At: now, Name: s.Name, Text: describe(s, known)})
+			l.events = append(l.events, state.Event{At: now, Name: s.Name, Text: describe(s, prev, known)})
 		}
 		l.spores[id] = s
 	}
@@ -144,14 +144,17 @@ func (l *Live) wanted(s state.Spore) bool {
 	return false
 }
 
-func describe(s state.Spore, known bool) string {
+// describe words a state change for the lifecycle feed. EC2 can't tell a job
+// finishing (spored terminating itself) from a user's terminate — both are
+// "User initiated" — so only causes EC2 does reveal are named.
+func describe(s, prev state.Spore, known bool) string {
 	switch {
 	case !known && s.State == state.EC2Pending:
 		return "launched"
+	case known && prev.State == state.EC2Stopped && s.State == state.EC2Pending:
+		return "starting"
 	case s.State == state.EC2Terminated && strings.Contains(s.Reason, "Service initiated"):
 		return "terminated by AWS (Spot reclaim)"
-	case s.State == state.EC2Terminated && s.OnComplete == "terminate" && !s.TTLDeadline.IsZero() && time.Now().Before(s.TTLDeadline):
-		return "terminated (job complete, or by user)"
 	case s.State == state.EC2Terminated && !s.TTLDeadline.IsZero() && !time.Now().Before(s.TTLDeadline):
 		return "terminated (TTL reached)"
 	}

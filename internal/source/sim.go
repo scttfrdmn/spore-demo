@@ -170,9 +170,7 @@ func simDescribe(sp state.Spore, st string) string {
 	case st == state.EC2Stopping && sp.IdleTimeout != "":
 		return "idle " + sp.IdleTimeout + " → stopping"
 	case st == state.EC2Pending && sp.State == state.EC2Stopped:
-		return "spawn connect → starting"
-	case st == state.EC2ShuttingDown && sp.OnComplete == "terminate":
-		return "job complete → terminating"
+		return "starting"
 	}
 	return st
 }

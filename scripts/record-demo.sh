@@ -9,7 +9,7 @@
 # Story: truffle → launch a workstation → status → it idles and stops itself
 # → status (effective rate falls) → spawn connect restarts it → a job array
 # whose members terminate themselves → an MPI cohort that does the same →
-# spawn list → terminate the workstation.
+# terminate the workstation.
 #
 # Output (in recordings/):
 #   spore-demo.cast        real time
@@ -77,19 +77,19 @@ driver() {
   type_cmd 'clear'; sleep 1
 
   mark "1: truffle"
-  type_cmd 'truffle find "amd turin 16 cores 64gb" --regions us-west-2 --exact'; idle_prompt; sleep 4
+  type_cmd 'truffle find "amd turin 16 cores 64gb" | head -12'; idle_prompt; sleep 5
   type_cmd 'truffle spot m8a.4xlarge --sort-by-price | head -14';                 idle_prompt; sleep 5
   type_cmd 'clear'
 
   mark "2: launch workstation"
   type_cmd "spawn launch demo --instance-type m8a.4xlarge --ttl 1h --idle-timeout $IDLE"
-  if ! $SIM; then wait_shell '\[y/N\]|\(y/n\)|Proceed\?' 120; sleep 3; tmux send-keys -t "$S" y Enter; fi
-  wait_for 'demo +m8a\.4xlarge .*● running' 300; mark "demo running"; idle_prompt; sleep 3
-  type_cmd 'clear'; type_cmd 'spawn status demo'; idle_prompt; mark "status (running)"; sleep 8
+  wait_for 'demo +m8a\.4xlarge .*● running' 300; mark "demo running"; idle_prompt
+  sleep 75   # let spored take its first reading, so status shows idle progress, not "unknown"
+  type_cmd 'clear'; type_cmd 'spawn status demo | head -16'; idle_prompt; mark "status (running)"; sleep 8
 
   # Hands off: any SSH session or traffic would count as activity.
   wait_for 'demo +m8a\.4xlarge .*◻ stopped' 3600; mark "demo stopped (idle)"; sleep 5
-  type_cmd 'clear'; type_cmd 'spawn status demo'; idle_prompt; mark "status (stopped)"; sleep 8
+  type_cmd 'clear'; type_cmd 'spawn status demo | head -20'; idle_prompt; mark "status (stopped)"; sleep 10
 
   mark "3: connect restarts it"
   type_cmd 'clear'; type_cmd 'spawn connect demo'
@@ -103,23 +103,24 @@ driver() {
   mark "4: job array"
   type_cmd 'clear'
   type_cmd "spawn launch arr --job-array-name arr --count 8 --instance-type c8a.xlarge --spot --ttl 1h \\"
-  type_cmd "  --on-complete terminate -y --command 'echo \"member \$JOB_ARRAY_INDEX of \$JOB_ARRAY_SIZE on \$(hostname)\"; sleep 45' | tail -4"
+  type_cmd "  --on-complete terminate -y --command 'echo \"member \$JOB_ARRAY_INDEX of \$JOB_ARRAY_SIZE on \$(hostname)\"; sleep 45'"
   wait_for 'arr .*●●●●●●●●' 300; mark "array running"; idle_prompt
   type_cmd 'spawn array status arr'; idle_prompt; sleep 3
-  type_cmd 'spawn array logs arr --index 3 | tail -1'; idle_prompt
+  type_cmd 'spawn array logs arr --index 3'; idle_prompt
   wait_for 'arr .*○○○○○○○○' 600; mark "array gone"; sleep 4
 
   mark "5: MPI"
   type_cmd 'clear'
   type_cmd "spawn launch sim --job-array-name sim --count 4 --mpi --instance-type c8a.4xlarge --ttl 1h \\"
-  type_cmd "  --mpi-command hostname --mpi-processes-per-node 1 --on-complete terminate -y | tail -4"
+  type_cmd "  --mpi-command hostname --mpi-processes-per-node 1 --on-complete terminate -y"
   wait_for 'sim .*●●●●' 600; mark "mpi running"; idle_prompt
-  type_cmd 'spawn array logs sim --index 0 | tail -4'; idle_prompt
+  type_cmd 'spawn array logs sim --index 0'; idle_prompt
   wait_for 'sim .*○○○○' 900; mark "mpi gone"; sleep 4
 
   mark "6: clean up"
-  type_cmd 'clear'; type_cmd 'spawn list'; idle_prompt; sleep 4
-  type_cmd 'spawn terminate demo --yes'
+  # (no `spawn list` here: other spawn work in the account would appear on camera;
+  #  the dashboard shows that only the workstation is left)
+  type_cmd 'clear'; type_cmd 'spawn terminate demo --yes'
   wait_for 'demo +m8a\.4xlarge .*○ terminated' 600; mark "all gone"; sleep 10
   tmux kill-session -t "=$SESSION"     # ends the recording
 }

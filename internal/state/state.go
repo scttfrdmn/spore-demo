@@ -45,8 +45,12 @@ type Spore struct {
 // Cost returns the estimated spend so far at time now.
 func (s Spore) Cost(now time.Time) float64 {
 	sec := s.ComputeSec
-	if s.State == EC2Running && !s.Heartbeat.IsZero() && now.After(s.Heartbeat) {
+	switch {
+	case s.State != EC2Running:
+	case !s.Heartbeat.IsZero() && now.After(s.Heartbeat):
 		sec += now.Sub(s.Heartbeat).Seconds()
+	case s.Heartbeat.IsZero() && !s.Launch.IsZero() && now.After(s.Launch):
+		sec += now.Sub(s.Launch).Seconds() // before spored's first heartbeat
 	}
 	cost := sec / 3600 * s.Rate
 	if !s.Launch.IsZero() && s.State != EC2Terminated {
