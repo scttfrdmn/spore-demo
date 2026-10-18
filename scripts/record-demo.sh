@@ -77,15 +77,16 @@ driver() {
   type_cmd 'clear'; sleep 1
 
   mark "1: truffle"
-  type_cmd 'truffle find "amd turin 16 cores 64gb" | head -12'; idle_prompt; sleep 5
+  type_cmd 'truffle find "amd turin 16 cores 64gb" | head -12'
+  $SIM || wait_shell 'Showing [0-9]+ ' 300; mark "find done"; idle_prompt; sleep 5
   type_cmd 'truffle spot m8a.4xlarge --sort-by-price | head -14';                 idle_prompt; sleep 5
   type_cmd 'clear'
 
   mark "2: launch workstation"
   type_cmd "spawn launch demo --instance-type m8a.4xlarge --ttl 1h --idle-timeout $IDLE"
   wait_for 'demo +m8a\.4xlarge .*● running' 300; mark "demo running"; idle_prompt
-  sleep 75   # let spored take its first reading, so status shows idle progress, not "unknown"
-  type_cmd 'clear'; type_cmd 'spawn status demo | head -16'; idle_prompt; mark "status (running)"; sleep 8
+  sleep 150  # spored needs two 1-min ticks for an idle reading, so status shows "stops in …"
+  type_cmd 'clear'; type_cmd 'spawn status demo | head -24'; idle_prompt; mark "status (running)"; sleep 8
 
   # Hands off: any SSH session or traffic would count as activity.
   wait_for 'demo +m8a\.4xlarge .*◻ stopped' 3600; mark "demo stopped (idle)"; sleep 5

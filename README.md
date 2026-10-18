@@ -64,26 +64,28 @@ From the shell pane (the talk's "spore.host: from laptop to MPI" slide):
 
 | Step | Command | What the audience sees |
 |---|---|---|
-| 1. Find | `truffle find "amd turin 16 cores 64gb" --regions us-west-2 --exact` | One answer, `m8a.4xlarge`, in ~3 s. |
+| 1. Find | `truffle find "amd turin 16 cores 64gb"` | ~3 s in your configured region; the exact fit, `m8a.4xlarge`, first, then the next-closest. |
 | | `truffle spot m8a.4xlarge --sort-by-price` | Cheapest Spot first across regions; 60–75% savings. |
-| 2. Launch | `spawn launch demo --instance-type m8a.4xlarge --ttl 1h --idle-timeout 15m` | The cost prompt (max cost before anything launches), then a row: ◐ pending → ● running, TTL counting down. |
-| | `spawn status demo` | Cost, effective rate, TTL, idle rule. |
-| 3. Idle | *(hands off)* | spored stops it: ◻ stopped. Burn rate drops to EBS only; EFF/HR keeps falling. |
-| | `spawn status demo` | Same numbers from spawn. |
-| 4. Connect | `spawn connect demo` | Starts the stopped instance and connects (~35 s). |
+| 2. Launch | `spawn launch demo --instance-type m8a.4xlarge --ttl 1h --idle-timeout 15m` | Ready in ~25 s: a row goes ◐ pending → ● running, TTL counting down. (`--dry-run` shows the max cost first.) |
+| | `spawn status demo` | Cost, effective rate, TTL, and — after spored's first reading (~1 min) — idle progress ("stops in 3m 8s"). |
+| 3. Idle | *(hands off — even `spawn connect` counts as activity)* | spored stops it: ◻ stopped. Burn rate drops to EBS only; EFF/HR keeps falling. |
+| | `spawn status demo` | Stopped since, why, TTL still counting, cost across all boots, effective rate, what still bills. |
+| 4. Connect | `spawn connect demo` | "Instance is stopped — starting it…", shell in ~35 s; compute carries over across boots. |
 | 5. Array | `spawn launch arr --job-array-name arr --count 8 --instance-type c8a.xlarge --spot --ttl 1h --on-complete terminate -y --command 'echo "member $JOB_ARRAY_INDEX of $JOB_ARRAY_SIZE on $(hostname)"; sleep 45'` | Eight dots go green, then each member terminates itself. |
 | | `spawn array status arr` · `spawn array logs arr --index 3` | Per-member state; one member's output. |
 | 6. MPI | `spawn launch sim --job-array-name sim --count 4 --mpi --instance-type c8a.4xlarge --ttl 1h --mpi-command hostname --mpi-processes-per-node 1 --on-complete terminate -y` | All-or-nothing cohort; runs; cleans itself up. |
-| 7. Clean up | `spawn list` · `spawn terminate demo --yes` | Only the workstation was left to remove. |
+| 7. Clean up | `spawn list` · `spawn terminate demo --yes` | Only the workstation was left to remove. (`spawn list` shows every spawn instance in the account — skip it if other work is running.) |
 
 The workstation is On-Demand on purpose: a one-time Spot instance can't be stopped, and Spot can be
 reclaimed mid-demo.
+
+Tested live with spawn 0.134.0 and truffle 0.60.0.
 
 ## Recording the demo
 
 ```bash
 brew install asciinema agg ffmpeg
-AWS_PROFILE=aws scripts/record-demo.sh      # drives the whole demo unattended; IDLE=5m by default
+AWS_PROFILE=aws scripts/record-demo.sh      # drives the whole demo unattended (~18 min); IDLE=5m by default
 scripts/render-mp4.sh                       # sped-up .cast + MP4 (waits compressed to seconds)
 asciinema play -m recordings/spore-demo-fast.cast   # -m holds the final frame
 ```

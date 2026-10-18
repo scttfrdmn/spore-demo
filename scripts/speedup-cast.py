@@ -21,6 +21,7 @@ import pathlib
 
 # (from marker, offset s, to marker, offset s, play this stretch in N seconds)
 PLAN = [
+    ("1: truffle", 6, "find done", -1, 4),                     # truffle find querying AWS
     ("demo running", 6, "status (running)", -14, 3),          # waiting for spored's first reading
     ("status (running)", 10, "demo stopped (idle)", -5, 12),   # idle wait (IDLE + up to a minute)
     ("array running", 14, "array gone", -4, 8),                # members run, then terminate themselves
