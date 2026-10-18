@@ -77,9 +77,19 @@ driver() {
   type_cmd 'clear'; sleep 1
 
   mark "1: truffle"
-  type_cmd 'truffle find "amd turin 16 cores 64gb" | head -12'
-  $SIM || wait_shell 'Showing [0-9]+ ' 300; mark "find done"; idle_prompt; sleep 5
-  type_cmd 'truffle spot m8a.4xlarge --sort-by-price | head -14';                 idle_prompt; sleep 5
+  # Keep tables whole (never pipe into head — it cuts the bottom border off).
+  # truffle --limit (spore-host/truffle#250) when available; until then --exact
+  # for find and a few regions for spot keep them inside the 24-row pane.
+  if truffle find --help 2>/dev/null | grep -q -- '--limit'; then
+    find_cmd='truffle find "amd turin 16 cores 64gb" --limit 6'
+    spot_cmd='truffle spot m8a.4xlarge --sort-by-price --limit 8'
+  else
+    find_cmd='truffle find "amd turin 16 cores 64gb" --exact'
+    spot_cmd='truffle spot m8a.4xlarge --sort-by-price --regions us-west-2,us-east-1'
+  fi
+  type_cmd "$find_cmd"
+  $SIM || wait_shell 'Showing [0-9]+ |Found [0-9]+ instance' 300; mark "find done"; idle_prompt; sleep 5
+  type_cmd 'clear'; type_cmd "$spot_cmd"; idle_prompt; sleep 6
   type_cmd 'clear'
 
   mark "2: launch workstation"

@@ -194,9 +194,9 @@ func (m Model) leftPane(w, rows int, singles []state.Spore) []string {
 	if len(singles) == 0 {
 		lines = append(lines, sDim.Render("  no spores launched yet"))
 	}
-	lines = append(lines, "", sDim.Render("  COST = compute so far + EBS · EFF/HR = cost ÷ hours since launch"))
+	lines = append(lines, m.feed(w, rows+1-len(lines), false)...)
 	top := fmt.Sprintf("spent %s · burning %s/hr", money(spend), money(burn))
-	return box(w, rows+1, "SPORES · single instances", top, lines, "spawn launch · status · connect")
+	return box(w, rows+1, "SPORES · single instances", top, lines, "COST = compute + EBS · EFF/HR = cost ÷ hours since launch")
 }
 
 func (m Model) singleRow(s state.Spore, now time.Time) string {
@@ -249,18 +249,7 @@ func (m Model) rightPane(w, rows int, arrays []group) []string {
 	if len(arrays) == 0 {
 		lines = append(lines, sDim.Render("  no job arrays yet"))
 	}
-	lines = append(lines, sDim.Render(" "+strings.Repeat("·", w-4)), " "+sHeader.Render("LIFECYCLE"))
-	room := rows + 1 - len(lines)
-	ev := compact(m.snap.Events)
-	if len(ev) > room {
-		ev = ev[len(ev)-room:]
-	}
-	for _, e := range ev {
-		lines = append(lines, "  "+sDim.Render(e.At.Format("15:04:05"))+"  "+pad(e.Name, 10)+eventStyle(e.Text).Render(e.Text))
-	}
-	if len(m.snap.Events) == 0 {
-		lines = append(lines, sDim.Render("  (waiting for the first launch)"))
-	}
+	lines = append(lines, m.feed(w, rows+1-len(lines), true)...)
 	top := fmt.Sprintf("%d arrays · %d members alive", len(arrays), alive)
 	return box(w, rows+1, "ARRAYS & MPI", top, lines, "● running  ◐ starting  ◑ terminating  ○ gone")
 }
@@ -360,6 +349,32 @@ func ec2Cell(s string) (string, lipgloss.Style) {
 		return "○ terminated", sDim
 	}
 	return "? " + s, st
+}
+
+// feed renders one pane's lifecycle events (single instances on the left,
+// array/MPI members on the right) in room lines, newest last.
+func (m Model) feed(w, room int, arrays bool) []string {
+	if room < 3 {
+		return nil
+	}
+	lines := []string{sDim.Render(" " + strings.Repeat("·", w-4)), " " + sHeader.Render("LIFECYCLE")}
+	var ev []state.Event
+	for _, e := range m.snap.Events {
+		if e.Array == arrays {
+			ev = append(ev, e)
+		}
+	}
+	ev = compact(ev)
+	if n := room - len(lines); len(ev) > n {
+		ev = ev[len(ev)-n:]
+	}
+	for _, e := range ev {
+		lines = append(lines, "  "+sDim.Render(e.At.Format("15:04:05"))+"  "+pad(e.Name, 10)+eventStyle(e.Text).Render(e.Text))
+	}
+	if len(ev) == 0 {
+		lines = append(lines, sDim.Render("  (nothing yet)"))
+	}
+	return lines
 }
 
 // compact merges consecutive events that are the same change across members

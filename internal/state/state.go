@@ -71,9 +71,10 @@ func (s Spore) EffectiveRate(now time.Time) float64 {
 
 // Event is one line in the lifecycle feed.
 type Event struct {
-	At   time.Time
-	Name string
-	Text string
+	At    time.Time
+	Name  string
+	Text  string
+	Array bool // a job-array / MPI member, shown in that pane's feed
 }
 
 // Snapshot is a complete point-in-time view.

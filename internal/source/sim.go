@@ -146,7 +146,8 @@ func (s *Sim) Snapshot() state.Snapshot {
 				runningSince = p.at
 			}
 			if sp.State != p.state {
-				snap.Events = append(snap.Events, state.Event{At: at(p.at), Name: sp.Name, Text: simDescribe(sp, p.state)})
+				snap.Events = append(snap.Events, state.Event{At: at(p.at), Name: sp.Name, Text: simDescribe(sp, p.state),
+					Array: sp.ArrayName != ""})
 			}
 			sp.State = p.state
 		}
@@ -167,8 +168,6 @@ func simDescribe(sp state.Spore, st string) string {
 	switch {
 	case st == state.EC2Pending && sp.State == "":
 		return "launched"
-	case st == state.EC2Stopping && sp.IdleTimeout != "":
-		return "idle " + sp.IdleTimeout + " → stopping"
 	case st == state.EC2Pending && sp.State == state.EC2Stopped:
 		return "starting"
 	}

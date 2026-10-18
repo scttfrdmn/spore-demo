@@ -120,7 +120,8 @@ func (l *Live) poll(ctx context.Context) {
 			l.seen[id] = true
 		}
 		if !known || prev.State != s.State {
-			l.events = append(l.events, state.Event{At: now, Name: s.Name, Text: describe(s, prev, known)})
+			l.events = append(l.events, state.Event{At: now, Name: s.Name, Text: describe(s, prev, known),
+				Array: s.ArrayName != ""})
 		}
 		l.spores[id] = s
 	}
