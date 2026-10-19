@@ -369,7 +369,7 @@ func (m Model) feed(w, room int, arrays bool) []string {
 		ev = ev[len(ev)-n:]
 	}
 	for _, e := range ev {
-		lines = append(lines, "  "+sDim.Render(e.At.Format("15:04:05"))+"  "+pad(e.Name, 10)+eventStyle(e.Text).Render(e.Text))
+		lines = append(lines, "  "+sDim.Render(e.At.Format("15:04:05"))+"  "+pad(e.Name, 12)+" "+eventStyle(e.Text).Render(e.Text))
 	}
 	if len(ev) == 0 {
 		lines = append(lines, sDim.Render("  (nothing yet)"))

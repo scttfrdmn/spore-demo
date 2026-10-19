@@ -94,9 +94,11 @@ driver() {
 
   mark "2: launch workstation"
   type_cmd "spawn launch demo --instance-type m8a.4xlarge --ttl 1h --idle-timeout $IDLE"
+  # spawn shows "About to launch … Max cost …" and asks; answer like a person would
+  if ! $SIM; then wait_shell 'Launch\? \[y/N\]' 120; sleep 4; tmux send-keys -t "$S" y; sleep 0.5; tmux send-keys -t "$S" Enter; fi
   wait_for 'demo +m8a\.4xlarge .*● running' 300; mark "demo running"; idle_prompt
   sleep 150  # spored needs two 1-min ticks for an idle reading, so status shows "stops in …"
-  type_cmd 'clear'; type_cmd 'spawn status demo | head -24'; idle_prompt; mark "status (running)"; sleep 8
+  type_cmd 'clear'; type_cmd 'spawn status demo | head -22'; idle_prompt; mark "status (running)"; sleep 8
 
   # Hands off: any SSH session or traffic would count as activity.
   wait_for 'demo +m8a\.4xlarge .*◻ stopped' 3600; mark "demo stopped (idle)"; sleep 5

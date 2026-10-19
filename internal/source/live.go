@@ -119,6 +119,11 @@ func (l *Live) poll(ctx context.Context) {
 		if s.State != state.EC2Terminated {
 			l.seen[id] = true
 		}
+		if !known && s.State != state.EC2Pending && s.State != state.EC2Terminated {
+			// first seen already past pending (it launched between polls):
+			// still report the launch, so array members' events line up
+			l.events = append(l.events, state.Event{At: now, Name: s.Name, Text: "launched", Array: s.ArrayName != ""})
+		}
 		if !known || prev.State != s.State {
 			l.events = append(l.events, state.Event{At: now, Name: s.Name, Text: describe(s, prev, known),
 				Array: s.ArrayName != ""})
